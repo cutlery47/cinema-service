@@ -41,12 +41,19 @@ CREATE TABLE service_schema.cinema_movies (
     movie_id UUID REFERENCES service_schema.movie NOT NULL
 );
 
+CREATE TABLE service_schema.ticket_price (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    category_id UUID REFERENCES service_schema.cinema_category NOT NULL,
+    movie_id UUID REFERENCES service_schema.movie NOT NULL,
+    price service_schema.positive_int NOT NULL
+);
+
 CREATE TABLE service_schema.session (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     cinema_id UUID REFERENCES service_schema.cinema NOT NULL,
     movie_id UUID REFERENCES service_schema.movie NOT NULL,
+    price_id UUID REFERENCES service_schema.ticket_price NOT NULL,
     starts_at timestamp with time zone NOT NULL,
     hall service_schema.string NOT NULL,
-    price service_schema.positive_int NOT NULL,
     remaining service_schema.non_negative_int NOT NULL
 );
