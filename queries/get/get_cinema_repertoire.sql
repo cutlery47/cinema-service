@@ -1,5 +1,3 @@
-\connect cinema_service
-
 SELECT 
 service_schema.movie.name
 FROM
