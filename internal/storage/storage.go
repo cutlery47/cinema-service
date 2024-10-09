@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
 	_ "github.com/lib/pq"
 )
@@ -27,23 +28,11 @@ func New(user, password, dbname string) (*Storage, error) {
 }
 
 func (s Storage) GetCinemaRepertoire(cinemaName string) (res []string, err error) {
-	query :=
-		`
-		SELECT
-		service_schema.movie.name
-		FROM 
-		service_schema.cinema_movies
-		JOIN 
-		service_schema.cinema
-		ON 
-		service_schema.cinema.id = service_schema.cinema_movies.cinema_id
-		JOIN 
-		service_schema.movie
-		ON 
-		service_schema.movie.id = service_schema.cinema_movies.movie_id
-		WHERE 
-		service_schema.cinema.name = $1;
-		`
+	query, err := queryFromFile("queries/get/get_cinema_repertoire.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 
 	rows, err := s.db.Query(query, cinemaName)
 	if err != nil {
@@ -61,17 +50,11 @@ func (s Storage) GetCinemaRepertoire(cinemaName string) (res []string, err error
 }
 
 func (s Storage) GetCinemaLocation(cinemaName string) (res string, err error) {
-	query :=
-		`
-		SELECT 
-		service_schema.cinema.district,
-		service_schema.cinema.street,
-		service_schema.cinema.building
-		FROM
-		service_schema.cinema
-		WHERE
-		service_schema.cinema.name = $1
-		`
+	query, err := queryFromFile("queries/get/get_cinema_location.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 
 	row := s.db.QueryRow(query, cinemaName)
 
@@ -91,19 +74,11 @@ func (s Storage) GetCinemaLocation(cinemaName string) (res string, err error) {
 }
 
 func (s Storage) GetCinemaCapacity(cinemaName string) (res string, err error) {
-	query :=
-		`
-		SELECT
-		service_schema.cinema_category.capacity
-		FROM 
-		service_schema.cinema
-		JOIN 
-		service_schema.cinema_category
-		ON
-		service_schema.cinema.category_id = service_schema.cinema_category.id
-		WHERE 
-		service_schema.cinema.name = $1
-		`
+	query, err := queryFromFile("queries/get/get_cinema_capacity.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 
 	row := s.db.QueryRow(query, cinemaName)
 
@@ -121,15 +96,11 @@ func (s Storage) GetCinemaCapacity(cinemaName string) (res string, err error) {
 }
 
 func (s Storage) GetSessionRemaining(sessionId string) (res string, err error) {
-	query :=
-		`
-		SELECT
-		service_schema.session.remaining
-		FROM 
-		service_schema.session
-		WHERE 
-		service_schema.session.id = $1
-		`
+	query, err := queryFromFile("queries/get/get_session_remaining.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 
 	row := s.db.QueryRow(query, sessionId)
 
@@ -147,19 +118,11 @@ func (s Storage) GetSessionRemaining(sessionId string) (res string, err error) {
 }
 
 func (s Storage) GetSessionPrice(sessionId string) (res string, err error) {
-	query :=
-		`
-		SELECT
-		service_schema.ticket_price.price
-		FROM 
-		service_schema.session
-		JOIN
-		service_schema.ticket_price
-		ON 
-		service_schema.session.price_id = service_schema.ticket_price.id 
-		WHERE 
-		service_schema.session.id = $1
-		`
+	query, err := queryFromFile("queries/get/get_sesion_price.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 
 	row := s.db.QueryRow(query, sessionId)
 
@@ -177,16 +140,11 @@ func (s Storage) GetSessionPrice(sessionId string) (res string, err error) {
 }
 
 func (s Storage) GetMovieInfo(movieName string) (res string, err error) {
-	query :=
-		`
-		SELECT
-		service_schema.movie.production,
-		service_schema.movie.director
-		FROM 
-		service_schema.movie
-		WHERE 
-		service_schema.movie.name = $1
-		`
+	query, err := queryFromFile("queries/get/get_movie_info.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 
 	row := s.db.QueryRow(query, movieName)
 
@@ -206,16 +164,12 @@ func (s Storage) GetMovieInfo(movieName string) (res string, err error) {
 }
 
 func (s Storage) AddCinemaRepertoire(cinemaName, movieName string) (res string, err error) {
+	cinemaQuery, err := queryFromFile("queries/get/get_cinema_by_name.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 
-	cinemaQuery :=
-		`
-		SELECT 
-		service_schema.cinema.id
-		FROM 
-		service_schema.cinema
-		WHERE 
-		service_schema.cinema.name = $1
-		`
 	cinemaRow := s.db.QueryRow(cinemaQuery, cinemaName)
 
 	cinemaId := ""
@@ -229,15 +183,11 @@ func (s Storage) AddCinemaRepertoire(cinemaName, movieName string) (res string, 
 		}
 	}
 
-	movieQuery :=
-		`
-		SELECT
-		service_schema.movie.id
-		FROM 
-		service_schema.movie
-		WHERE
-		service_schema.movie.name = $1
-		`
+	movieQuery, err := queryFromFile("queries/get/get_movie_by_name.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 	movieRow := s.db.QueryRow(movieQuery, movieName)
 
 	movieId := ""
@@ -251,14 +201,11 @@ func (s Storage) AddCinemaRepertoire(cinemaName, movieName string) (res string, 
 		}
 	}
 
-	query :=
-		`
-		INSERT INTO
-		service_schema.cinema_movies
-		VALUES
-		$1,
-		$2
-		`
+	query, err := queryFromFile("queries/get/add_movie.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 	row := s.db.QueryRow(query, cinemaId, movieId)
 
 	err = row.Scan(&res)
@@ -275,15 +222,11 @@ func (s Storage) AddCinemaRepertoire(cinemaName, movieName string) (res string, 
 }
 
 func (s Storage) DeleteCinemaRepertoire(cinemaName, movieName string) (res string, err error) {
-	cinemaQuery :=
-		`
-	SELECT 
-	service_schema.cinema.id
-	FROM 
-	service_schema.cinema
-	WHERE 
-	service_schema.cinema.name = $1
-	`
+	cinemaQuery, err := queryFromFile("queries/get/get_cinema_by_name.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 	cinemaRow := s.db.QueryRow(cinemaQuery, cinemaName)
 
 	cinemaId := ""
@@ -297,15 +240,11 @@ func (s Storage) DeleteCinemaRepertoire(cinemaName, movieName string) (res strin
 		}
 	}
 
-	movieQuery :=
-		`
-		SELECT
-		service_schema.movie.id
-		FROM 
-		service_schema.movie
-		WHERE
-		service_schema.movie.name = $1
-		`
+	movieQuery, err := queryFromFile("queries/get/get_movie_by_name.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 	movieRow := s.db.QueryRow(movieQuery, movieName)
 
 	movieId := ""
@@ -319,15 +258,11 @@ func (s Storage) DeleteCinemaRepertoire(cinemaName, movieName string) (res strin
 		}
 	}
 
-	query :=
-		`
-		DELETE FROM 
-		service_schema.cinema_movies
-		WHERE
-		service_schema.cinema_movies.cinema_id = $1
-		AND
-		service_schmea.cinema_movies.movie_id = $2
-		`
+	query, err := queryFromFile("queries/delete/delete_movie.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 	row := s.db.QueryRow(query, cinemaId, movieId)
 
 	err = row.Scan(&res)
@@ -344,15 +279,12 @@ func (s Storage) DeleteCinemaRepertoire(cinemaName, movieName string) (res strin
 }
 
 func (s Storage) AddCinema(cinemaName, categoryName, district, street, building string) (res string, err error) {
-	categoryQuery :=
-		`
-	SELECT 
-	service_schema.cinema_category.id
-	FROM 
-	service_schema.cinema_category
-	WHERE 
-	service_schema.cinema_category.name = $1
-	`
+	categoryQuery, err := queryFromFile("queries/get/get_category_by_name.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
+
 	cinemaRow := s.db.QueryRow(categoryQuery, categoryName)
 
 	categoryId := ""
@@ -366,22 +298,11 @@ func (s Storage) AddCinema(cinemaName, categoryName, district, street, building 
 		}
 	}
 
-	query :=
-		`
-		INSERT INTO
-		service_schema.cinema
-		category_id,
-		name,
-		district,
-		street,
-		building
-		VALUES
-		$1,
-		$2,
-		$3,
-		$4,
-		$5
-		`
+	query, err := queryFromFile("queries/add/add_cinema.sql")
+	if err != nil {
+		log.Println("Error:", err)
+		return res, ErrInternal
+	}
 	row := s.db.QueryRow(query, categoryId, cinemaName, district, street, building)
 
 	err = row.Scan(&res)
@@ -395,4 +316,19 @@ func (s Storage) AddCinema(cinemaName, categoryName, district, street, building 
 	}
 
 	return res, nil
+}
+
+func queryFromFile(path string) (query string, err error) {
+	fd, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("error when openning getting file desc: %v", err)
+	}
+	defer fd.Close()
+
+	stat, _ := fd.Stat()
+
+	byteQuery := make([]byte, stat.Size())
+	fd.Read(byteQuery)
+
+	return string(byteQuery), nil
 }
