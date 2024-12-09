@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS service_schema.cinema_category (
 CREATE TABLE IF NOT EXISTS service_schema.cinema (
     id          service_schema.uuid_key     PRIMARY KEY,
     -- Ссылка на категорию
-    category_id UUID                        REFERENCES service_schema.cinema_category NOT NULL,
+    category_id UUID                        REFERENCES service_schema.cinema_category ON DELETE CASCADE NOT NULL,
     -- Название кинотеатра
     name        service_schema.string,
     -- Расположение кинотеатра
@@ -41,9 +41,9 @@ CREATE TABLE IF NOT EXISTS service_schema.movie (
 CREATE TABLE IF NOT EXISTS service_schema.repertoire (
     id          service_schema.uuid_key                     PRIMARY KEY,
     -- Идентификатор кинотеатра
-    cinema_id   UUID REFERENCES service_schema.cinema       NOT NULL,
+    cinema_id   UUID REFERENCES service_schema.cinema       ON DELETE CASCADE NOT NULL,
     -- Идентификатор фильма
-    movie_id    UUID REFERENCES service_schema.movie        NOT NULL,
+    movie_id    UUID REFERENCES service_schema.movie        ON DELETE CASCADE NOT NULL,
 
     UNIQUE(cinema_id, movie_id)
 );
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS service_schema.repertoire (
 CREATE TABLE IF NOT EXISTS service_schema.session (
     id              service_schema.uuid_key                     PRIMARY KEY,
     -- Ссылка на пару "Кинотеатр - Фильм"
-    repertoire_id   UUID REFERENCES service_schema.repertoire   NOT NULL,
+    repertoire_id   UUID REFERENCES service_schema.repertoire   ON DELETE CASCADE NOT NULL,
     -- Время начало сеанса
     starts_at       TIMESTAMP WITH TIME ZONE                    NOT NULL,
     -- Число доступных мест на сеанс
